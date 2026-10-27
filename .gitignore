@@ -1,0 +1,25 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+
+# Python environments and generated files
+.venv/
+.venv-*/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime and personal data
+agenda.json
+lista_compras.json
+tpac_user.json
+data/memoria_acolhimento.json
+*.log
+*.sqlite
+*.sqlite3
+
+# Generated voice files
+voz/saida/
