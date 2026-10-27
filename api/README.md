@@ -33,7 +33,20 @@ Na pasta raiz do projeto:
 uvicorn servidor.app:app --host 0.0.0.0 --port 8000
 ```
 
-O endpoint de callback é `/webhook`. Para receber eventos da Meta, ele precisa
-estar acessível por HTTPS. Em teste local, publique uma URL temporária HTTPS
-para a porta 8000 e use-a como callback; depois assine o campo `messages` no
-produto WhatsApp. Respostas `SIM` e `NÃO` atualizam `tpac_user.json`.
+O endpoint de callback é `/webhook`. Use como URL da Meta
+`https://neura-whatsapp-api.onrender.com/webhook` e assine o campo `messages`
+na configuração de webhooks do app.
+
+## Confirmações entre VS Code e Render
+
+O perfil do VS Code continua no computador. O aplicativo envia ao Render apenas
+identificadores HMAC dos contatos que consentiram e consulta os status em
+`/v1/contacts/status`; nomes e números não são armazenados pelo serviço. O
+webhook `/webhook` converte o número recebido da Meta no mesmo identificador e
+atualiza o status. Configure `NEURA_SERVER_URL` e `NEURA_CLIENT_TOKEN` no `.env`
+local, com a URL HTTPS do Render e o mesmo token usado como
+`NEURA_SERVER_TOKEN` no Render.
+
+O arquivo de status `data/whatsapp_contacts.json` é temporário no plano gratuito
+do Render e pode ser apagado em reinícios ou novos deploys.
+

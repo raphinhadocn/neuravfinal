@@ -17,9 +17,11 @@ agenda.json
 lista_compras.json
 tpac_user.json
 data/memoria_acolhimento.json
+data/whatsapp_contacts.json
 *.log
 *.sqlite
 *.sqlite3
 
 # Generated voice files
 voz/saida/
+

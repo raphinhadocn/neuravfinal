@@ -8,9 +8,8 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
-from core.confirmacao_contatos import registrar_resposta
 from core.seguranca import enviar_whatsapp
-from data.data_manager import carregar_dados, salvar_dados
+from core.whatsapp_contact_sync import registrar_resposta_webhook
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 router = APIRouter()
@@ -44,7 +43,6 @@ async def receber_webhook(request: Request):
         raise HTTPException(status_code=400, detail="JSON inválido")
     if not isinstance(evento, dict) or evento.get("object") != "whatsapp_business_account":
         return {"status": "ignorado"}
-    dados = carregar_dados()
     respostas_registradas = []
     for entrada in evento.get("entry", []):
         for mudanca in entrada.get("changes", []):
@@ -53,13 +51,12 @@ async def receber_webhook(request: Request):
             for mensagem in mudanca.get("value", {}).get("messages", []):
                 if mensagem.get("type") == "text":
                     numero = mensagem.get("from", "")
-                    alterados = registrar_resposta(
-                        dados, numero, mensagem.get("text", {}).get("body", ""),
+                    alterados = registrar_resposta_webhook(
+                        numero, mensagem.get("text", {}).get("body", ""),
                     )
                     if alterados:
                         respostas_registradas.append(numero)
     if respostas_registradas:
-        salvar_dados(dados)
         for numero in respostas_registradas:
             try:
                 enviar_whatsapp(numero, "Obrigado! Sua resposta foi registrada pela NEURA.")
@@ -67,3 +64,4 @@ async def receber_webhook(request: Request):
                 # A autorização já foi salva; uma falha no agradecimento não a desfaz.
                 print(f"[NEURA] Resposta registrada; confirmação não enviada: {erro}")
     return {"status": "ok", "respostas_registradas": len(respostas_registradas)}
+

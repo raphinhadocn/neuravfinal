@@ -10,6 +10,7 @@ import core.agenda as agenda
 import re
 from core.conversa_acolhimento import ConversaAcolhimento
 from core import seguranca
+from core.whatsapp_sync import registrar_contatos, atualizar_status
 from voz.servico_voz import ServicoVoz
 
 def validar_email(email):
@@ -44,6 +45,16 @@ def validar_senha(senha):
     return True, ""
 
 
+def _informar_status_convites(contatos: list[dict]) -> None:
+    enviados = sum(bool(contato.get("convite_enviado")) for contato in contatos)
+    if enviados == len(contatos):
+        print(f"Convites enviados: {enviados}. Aguardando as respostas no WhatsApp.")
+    elif enviados:
+        print(f"Apenas {enviados} de {len(contatos)} convites foram enviados. Confira os avisos [NEURA] acima.")
+    else:
+        print("Nenhum convite foi enviado. Confira os avisos [NEURA] acima antes de esperar confirmações.")
+
+
 def cadastrar_contatos_seguranca(dados: dict, usuario: str):
     contatos = []
     print("\nCadastre dois contatos de segurança.")
@@ -66,8 +77,10 @@ def cadastrar_contatos_seguranca(dados: dict, usuario: str):
         })
     dados[usuario]["contatos_seguranca"] = contatos
     salvar_dados(dados)
+    registrar_contatos(usuario, contatos)
     seguranca.solicitar_validacoes(usuario, contatos)
     salvar_dados(dados)
+    _informar_status_convites(contatos)
     print("Contatos salvos. A conversa será liberada após as duas autorizações.")
 
 def criar_usuario_menu(dados: dict):
@@ -257,8 +270,10 @@ def criar_usuario_menu(dados: dict):
 
 
     salvar_dados(dados)
+    registrar_contatos(nome, contatos_seguranca)
     seguranca.solicitar_validacoes(nome, contatos_seguranca)
     salvar_dados(dados)
+    _informar_status_convites(contatos_seguranca)
 
 
     print(
@@ -461,6 +476,8 @@ def painel_principal_menu(dados: dict, usuario: str):
             gerenciar_tarefas_menu(dados, usuario, "tarefas_educacionais", "ESTUDOS E EDUCAÇÃO")
         elif opcao == "3":
             dados.update(carregar_dados())
+            if atualizar_status(dados, usuario):
+                salvar_dados(dados)
             if not seguranca.contatos_validados(dados[usuario]):
                 print("\nVocê não tem contato de segurança ainda.")
                 print("Os dois contatos precisam autorizar o cadastro.")
@@ -483,3 +500,4 @@ def painel_principal_menu(dados: dict, usuario: str):
         elif opcao == "8":
             cadastrar_contatos_seguranca(dados, usuario)
         
+

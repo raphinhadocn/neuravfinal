@@ -7,6 +7,7 @@ from google import genai
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
+from core.whatsapp_contact_sync import consultar_status_remoto, registrar_perfil_remoto
 from data.data_manager import carregar_dados, salvar_dados
 
 load_dotenv()
@@ -29,6 +30,21 @@ class Mensagem(BaseModel):
 
 class PedidoConversa(BaseModel):
     mensagens: list[Mensagem] = Field(min_length=1, max_length=60)
+
+
+class ContatoSincronizado(BaseModel):
+    contact_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    status: str = Field(pattern=r"^(pendente|aprovado|recusado)$")
+
+
+class RegistroContatos(BaseModel):
+    profile_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    contacts: list[ContatoSincronizado] = Field(min_length=1, max_length=2)
+
+
+class ConsultaStatusContatos(BaseModel):
+    profile_id: str = Field(pattern=r"^[a-f0-9]{64}$")
+    contact_ids: list[str] = Field(min_length=1, max_length=2)
 
 
 def _autorizar(authorization: str | None) -> None:
@@ -101,4 +117,29 @@ def conversar(
 ):
     _autorizar(authorization)
     return {"resposta": _gerar_resposta(pedido.mensagens)}
+
+
+@app.post("/v1/contacts/register")
+def registrar_contatos(
+    pedido: RegistroContatos,
+    authorization: str | None = Header(default=None),
+):
+    _autorizar(authorization)
+    total = registrar_perfil_remoto(
+        pedido.profile_id,
+        [contato.model_dump() for contato in pedido.contacts],
+    )
+    return {"registered": total}
+
+
+@app.post("/v1/contacts/status")
+def status_contatos(
+    pedido: ConsultaStatusContatos,
+    authorization: str | None = Header(default=None),
+):
+    _autorizar(authorization)
+    return {
+        "statuses": consultar_status_remoto(pedido.profile_id, pedido.contact_ids)
+    }
+
 

@@ -36,10 +36,12 @@ def solicitar_validacoes(usuario: str, contatos: list[dict]) -> None:
             continue
         try:
             resposta = enviar_template_convite(contato["whatsapp"], nome, usuario)
-            contato["convite_enviado"] = True
+            contato["convite_enviado"] = bool(resposta.get("messages"))
             if resposta.get("messages"):
                 contato["id_convite_whatsapp"] = resposta["messages"][0].get("id")
-            print(f"[NEURA] Convite enviado para {nome or contato['whatsapp']}; aguardando resposta.")
+                print(f"[NEURA] Convite enviado para {nome or contato['whatsapp']}; aguardando resposta.")
+            else:
+                print(f"[NEURA] A Meta não confirmou o envio do convite para {nome or 'o contato' }.")
         except Exception as erro:
             contato["convite_enviado"] = False
             print(f"[NEURA] Convite para {nome or 'o contato'} não enviado: {erro}")
@@ -93,3 +95,4 @@ def enviar_notas_se_necessario(dados: dict, usuario: str) -> bool:
         salvar_dados(dados)
         return True
     return False
+
